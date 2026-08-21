@@ -6,7 +6,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PerfisCrud from './pages/PerfisCrud';
-import UsuariosCrud from './pages/UsuariosCrud'; // <-- Verifique se o nome do arquivo na pasta bate exatamente com este
+import UsuariosCrud from './pages/UsuariosCrud';
 import Dashboard from './pages/Dashboard'; 
 
 // const Dashboard = () => (

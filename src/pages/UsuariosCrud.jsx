@@ -213,10 +213,12 @@ export default function UsuariosCrud() {
         <table className="w-full border-collapse text-left text-sm text-gray-500 table-fixed">
           <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-700 border-b">
             <tr>
-              <th className="px-6 py-4 w-[40%]">E-mail / Usuário</th>
+              <th className="px-6 py-4 w-[30%]">E-mail / Usuário</th>
               <th className="px-6 py-4 w-[25%]">Perfil Vinculado</th>
-              <th className="px-6 py-4 w-[15%]">Status</th>
-              <th className="px-6 py-4 w-[20%] text-right">Ações</th>
+              <th className="px-6 py-4 w-[10%]">Empresa</th>
+              <th className="px-6 py-4 w-[10%]">Fonte de Dado</th>
+              <th className="px-6 py-4 w-[15%]">Status</th>              
+              <th className="px-6 py-4 w-[10%] text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 border-t">
@@ -237,6 +239,12 @@ export default function UsuariosCrud() {
                   <td className="px-6 py-4 text-gray-700 font-medium">
                     {usr.perfil?.nome || usr.Perfil?.Nome || usr.perfilNome || usr.PerfilNome || '—'}
                   </td>
+                  <td className="px-6 py-4 text-gray-700 font-medium">
+                    {usr.tenant?.nome || usr.tenant?.Nome || '—'}
+                  </td>
+                  <td className="px-6 py-4 text-gray-700 font-medium">
+                    {usr.tenant?.slug || usr.tenant?.Slug || '—'}
+                  </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
                       (usr.ativo === 'S' || usr.Ativo === 'S') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
@@ -244,7 +252,7 @@ export default function UsuariosCrud() {
                       {(usr.ativo === 'S' || usr.Ativo === 'S') ? 'Ativo' : 'Inativo'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                                    <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-4">
                       <button onClick={() => abrirModal(usr)} className="text-gray-400 hover:text-blue-600 transition cursor-pointer" title="Editar">
                         <Edit2 size={16} />
