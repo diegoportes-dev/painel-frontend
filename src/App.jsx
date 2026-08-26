@@ -8,6 +8,7 @@ import ResetPassword from './pages/ResetPassword';
 import PerfisCrud from './pages/PerfisCrud';
 import UsuariosCrud from './pages/UsuariosCrud';
 import Dashboard from './pages/Dashboard'; 
+import NiveisAcessoCrud from './pages/NiveisAcessoCrud';
 
 // const Dashboard = () => (
 //   <div className="bg-white p-6 rounded shadow w-full">
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="perfis" element={<PerfisCrud />} />
             <Route path="usuarios" element={<UsuariosCrud />} /> {/* <-- Rota Relativa Limpa */}
+             <Route path="niveis-acesso" element={<NiveisAcessoCrud />} />
           </Route>
         </Route>
 

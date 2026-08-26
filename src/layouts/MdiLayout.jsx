@@ -8,7 +8,8 @@ import {
   ChevronDown, 
   Menu, 
   ChevronLeft,
-  LogOut
+  LogOut,
+  ShieldAlert
 } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode'; // <-- Importação adicionada
 
@@ -156,6 +157,15 @@ export default function MdiLayout() {
                   <UserRoundCheck size={16} className="shrink-0" />
                   <span className="whitespace-nowrap">Usuários</span>
                 </Link>
+
+                 <Link 
+                  to="/app/niveis-acesso" 
+                  className={`flex items-center gap-3 p-2.5 rounded text-sm transition-all ${verificarAtivo('/app/niveis-acesso')}`}
+                >
+                  <ShieldAlert size={16} className="shrink-0 text-indigo-400" />
+                  <span className="whitespace-nowrap">Níveis de Acesso</span>
+                </Link>
+
               </div>
             </div>
           </nav>
