@@ -46,12 +46,12 @@ export default function Login() {
 
       {/* Campo Email */}
       <div className="space-y-1">
-        <label className="text-sm font-medium text-gray-700">Email</label>
+        <label className="text-sm font-medium text-gray-700">Usuário</label>
         <input 
           type="email" 
           value={email} 
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email" 
+          placeholder="e-mail" 
           className={`w-full rounded border p-2.5 text-sm focus:outline-none ${
             fieldErrors.Email ? 'border-red-500 focus:border-red-500 bg-red-50/30' : 'border-gray-300 focus:border-blue-500'
           }`}
@@ -70,13 +70,13 @@ export default function Login() {
 
       {/* Campo Password */}
       <div className="space-y-1">
-        <label className="text-sm font-medium text-gray-700">Password</label>
+        <label className="text-sm font-medium text-gray-700">Senha</label>
         <div className="relative">
           <input 
             type={showPassword ? "text" : "password"} 
             value={password} 
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password" 
+            placeholder="senha" 
             className={`w-full rounded border p-2.5 pr-10 text-sm focus:outline-none ${
               fieldErrors.Senha ? 'border-red-500 focus:border-red-500 bg-red-50/30' : 'border-gray-300 focus:border-blue-500'
             }`}
@@ -101,8 +101,13 @@ export default function Login() {
         )}
       </div>
 
-      <div className="text-right">
-        <Link to="/forgot-password" className="text-xs text-blue-500 hover:underline">Forgot password?</Link>
+      <div className="flex items-center justify-between w-full select-none">
+        <Link to="/register-user" className="text-xs text-blue-500 hover:underline font-medium">
+          Cadastrar usuário
+        </Link>
+        <Link to="/forgot-password" className="text-xs text-blue-500 hover:underline font-medium">
+          Esqueceu a senha?
+        </Link>
       </div>
 
       <button 
@@ -110,7 +115,7 @@ export default function Login() {
         disabled={loading} 
         className="w-full rounded bg-[#42a1ec] p-3 font-medium text-white transition hover:bg-blue-500 disabled:bg-gray-400"
       >
-        {loading ? 'Carregando...' : 'Log In'}
+        {loading ? 'Carregando...' : 'Entrar'}
       </button>
     </form>
   );

@@ -37,7 +37,7 @@ export default function ForgotPassword() {
 
   return (
     <form onSubmit={handleForgotPassword} className="space-y-5">
-      <h2 className="text-xl font-medium text-gray-950">Forgot Password</h2>
+      <h2 className="text-xl font-medium text-gray-950">Esqueci Senha</h2>
       
       {globalError && <div className="bg-red-50 text-red-600 p-3 rounded text-sm font-medium">{globalError}</div>}
       {mensagem && <div className="bg-green-50 text-green-600 p-3 rounded text-sm font-medium">{mensagem}</div>}
@@ -48,7 +48,7 @@ export default function ForgotPassword() {
           type="email" 
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email" 
+          placeholder="Entre com seu e-mail" 
           className={`w-full rounded border p-2.5 text-sm focus:outline-none ${
             fieldErrors.Email ? 'border-red-500 focus:border-red-500 bg-red-50/30' : 'border-gray-300 focus:border-blue-500'
           }`}
@@ -70,11 +70,11 @@ export default function ForgotPassword() {
         disabled={loading}
         className="w-full rounded bg-[#42a1ec] p-3 font-medium text-white hover:bg-blue-500 disabled:bg-gray-400"
       >
-        {loading ? 'Sending...' : 'Send Recovery Link'}
+        {loading ? 'Enviando...' : 'Enviar Link de Recuperação'}
       </button>
 
       <div className="text-center">
-        <Link to="/login" className="text-xs text-blue-500 hover:underline">Back to Login</Link>
+        <Link to="/login" className="text-xs text-blue-500 hover:underline">Voltar para Login</Link>
       </div>
     </form>
   );

@@ -9,6 +9,7 @@ import PerfisCrud from './pages/PerfisCrud';
 import UsuariosCrud from './pages/UsuariosCrud';
 import Dashboard from './pages/Dashboard'; 
 import NiveisAcessoCrud from './pages/NiveisAcessoCrud';
+import RegisterUser from './pages/RegisterUser'
 
 // const Dashboard = () => (
 //   <div className="bg-white p-6 rounded shadow w-full">
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/register-user" element={<RegisterUser />} />
         </Route>
 
         {/* 2. Rotas Privadas Protegidas */}

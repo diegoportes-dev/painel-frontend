@@ -1,3 +1,5 @@
+
+import { apiClient } from './apiClient';
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const authService = {
@@ -68,5 +70,13 @@ export const authService = {
       throw new Error(data.message || 'Erro ao redefinir a senha.');
     }
     return data;
+  },
+
+  // Cadastro Inicial do Usuario
+  setupCadastro: async (payload) => {  
+    console.log('[authService] Enviando payload para o setup de cadastro:', payload); 
+    const resultado = await apiClient.post('/auth/setup-cadastro', payload);    
+    return resultado;
   }
+
 };
