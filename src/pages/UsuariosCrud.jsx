@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, X, Key } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, X, ArrowUpDown, Search, RotateCcw } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 
 export default function UsuariosCrud() {
@@ -16,6 +16,10 @@ export default function UsuariosCrud() {
     TotalPages: 0
   });
 
+  // Estados para Controle de Filtro e Ordenação no Front-end
+  const [filtroTexto, setFiltroTexto] = useState('');
+  const [ordenacao, setOrdenacao] = useState({ coluna: 'email', direcao: 'asc' });
+
   // Estados do Modal
   const [modalAberto, setModalAberto] = useState(false);
   const [idSelecionado, setIdSelecionado] = useState(null); 
@@ -29,7 +33,7 @@ export default function UsuariosCrud() {
   const [globalError, setGlobalError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // 1. Carregar registros de Usuários da API: route.MapGet("", ...)
+  // 1. Carregar registros de Usuários da API
   const carregarUsuarios = async (page = 1) => {
     console.log(`[UsuariosCrud] Chamando carregarUsuarios() para a página: ${page}`);
     setLoading(true);
@@ -56,29 +60,21 @@ export default function UsuariosCrud() {
         });
       }
     } catch (err) {
-      // console.error('[UsuariosCrud] Erro crítico pego no catch de carregarUsuarios:', err);
-      // setGlobalError(err.message || 'Falha ao conectar com o endpoint de usuários.');
       if (err.validationErrors) {
-          const errosFormatados = {};
-          
-          Object.keys(err.validationErrors).forEach(key => {
-            // Remove o prefixo "Input." ou "input." caso o C# devolva devido à Tupla do PUT
-            const partes = key.split('.');
-            const nomePropriedade = partes[partes.length - 1]; 
-            
-            // Força a primeira letra a ficar Maiúscula ("Email") para o JSX
-            const chaveNormalizada = nomePropriedade.charAt(0).toUpperCase() + nomePropriedade.slice(1);
-            
-            errosFormatados[chaveNormalizada] = err.validationErrors[key];
-          });
-
-          setFieldErrors(errosFormatados);
+        const errosFormatados = {};
+        Object.keys(err.validationErrors).forEach(key => {
+          const partes = key.split('.');
+          const nomePropriedade = partes[partes.length - 1]; 
+          const chaveNormalizada = nomePropriedade.charAt(0).toUpperCase() + nomePropriedade.slice(1);
+          errosFormatados[chaveNormalizada] = err.validationErrors[key];
+        });
+        setFieldErrors(errosFormatados);
       } else {
-          setGlobalError(err.message);
+        setGlobalError(err.message || 'Falha ao conectar com o endpoint de usuários.');
       }
-      } finally {
-          setLoading(false);
-      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 2. Carregar Perfis de forma isolada para não travar a tela
@@ -90,22 +86,54 @@ export default function UsuariosCrud() {
       const listaPerfis = res?.Data || res?.data || [];
       setPerfisDisponiveis(Array.isArray(listaPerfis) ? listaPerfis : []);
     } catch (err) {
-      console.error('[UsuariosCrud] Erro isolado ao carregar perfis auxiliares (a listagem de usuários continuará tentando rodar):', err);
+      console.error('[UsuariosCrud] Erro isolado ao carregar perfis auxiliares:', err);
     }
   };
 
-  // Ciclo de vida inicial controlado
   useEffect(() => {
     console.log('[UsuariosCrud] useEffect disparado.');
-    
-    // Função assíncrona interna para garantir ordem sequencial de execução sem concorrência destrutiva
     const inicializarTela = async () => {
       await carregarPerfisAuxiliares();
       await carregarUsuarios(1);
     };
-
     inicializarTela();
   }, []);
+
+  // Lógica do DataGrid: Alteração da coluna ordenada
+  const handleMudarOrdenacao = (coluna) => {
+    setOrdenacao(prev => ({
+      coluna,
+      direcao: prev.coluna === coluna && prev.direcao === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Processamento do filtro e ordenação na memória
+  const usuariosProcessados = usuarios
+    .filter(usuario => {
+      const termo = filtroTexto.toLowerCase();
+      const perfilNome = usuario.perfilNome || usuario.PerfilNome || usuario.perfil?.nome || usuario.Perfil?.Nome || '';
+      return (
+        usuario.email?.toLowerCase().includes(termo) ||
+        perfilNome.toLowerCase().includes(termo)
+      );
+    })
+    .sort((a, b) => {
+      const col = ordenacao.coluna;
+      let valA = '';
+      let valB = '';
+
+      if (col === 'perfil') {
+        valA = (a.perfilNome || a.PerfilNome || a.perfil?.nome || a.Perfil?.Nome || '').toString().toLowerCase();
+        valB = (b.perfilNome || b.PerfilNome || b.perfil?.nome || b.Perfil?.Nome || '').toString().toLowerCase();
+      } else {
+        valA = (a[col] || '').toString().toLowerCase();
+        valB = (b[col] || '').toString().toLowerCase();
+      }
+
+      if (valA < valB) return ordenacao.direcao === 'asc' ? -1 : 1;
+      if (valA > valB) return ordenacao.direcao === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   // 3. Controlar abertura do Modal
   const abrirModal = (usuario = null) => {
@@ -129,7 +157,7 @@ export default function UsuariosCrud() {
     setModalAberto(true);
   };
 
-  // 4. Salvar Usuário tratando FluentValidation: MapPost / MapPut
+  // 4. Salvar Usuário tratando FluentValidation
   const handleSalvar = async (e) => {
     e.preventDefault();
     setGlobalError('');
@@ -148,33 +176,22 @@ export default function UsuariosCrud() {
       setModalAberto(false);
       carregarUsuarios(paginacao.PageNumber);
     } catch (err) {
-      // if (err.validationErrors) {
-      //   setFieldErrors(err.validationErrors);
       if (err.validationErrors) {
         const errosFormatados = {};
-        
         Object.keys(err.validationErrors).forEach(key => {
-          // 1. Quebra a chave por pontos. Ex: "Input.Email" vira ["Input", "Email"]
           const partes = key.split('.');
-          
-          // 2. Pega estritamente a ÚLTIMA palavra do array ("Email")
           const nomePropriedade = partes[partes.length - 1]; 
-          
-          // 3. Garante que a primeira letra seja sempre Maiúscula para bater com o JSX
           const chaveNormalizada = nomePropriedade.charAt(0).toUpperCase() + nomePropriedade.slice(1);
-          
-          // 4. Copia a lista de erros para a nova chave limpa
           errosFormatados[chaveNormalizada] = err.validationErrors[key];
         });
-
         setFieldErrors(errosFormatados);
       } else {
-        setGlobalError(err.message);
+        setGlobalError(err.message || 'Erro inesperado ao salvar.');
       }
     }
   };
 
-  // 5. Deletar Usuário: route.MapDelete("/{id:guid}")
+  // 5. Deletar Usuário
   const handleDeletar = async (id) => {
     if (!confirm('Deseja realmente remover este usuário?')) return;
     setGlobalError('');
@@ -182,24 +199,57 @@ export default function UsuariosCrud() {
       await apiClient.delete(`/usuarios/${id}`);
       carregarUsuarios(paginacao.PageNumber);
     } catch (err) {
-      setGlobalError(err.message);
+      setGlobalError(err.message || 'Erro ao remover usuário.');
     }
   };
 
   return (
-    <div className="space-y-6 w-full px-2">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between w-full">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-950">Usuários</h1>
-          <p className="text-sm text-gray-600">Controle de acessos, credenciais e vinculação de perfis.</p>
+        <div className="space-y-6 w-full px-2">
+      
+      {/* CONTEINER DE AÇÕES ALINHADO (Filtro + Atualizar à esquerda, Botão Novo à direita) */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+        
+        {/* Bloco de Busca + Botão Resetar */}
+        <div className="flex items-center gap-2 w-full max-w-xl">
+          
+          {/* Input de Busca */}
+          <div className="relative flex-1">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <Search size={16} />
+            </span>
+            <input
+              type="text"
+              placeholder="Filtrar usuários por e-mail ou perfil associado..."
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+              className="w-full rounded border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition"
+            />
+          </div>
+
+          {/* 🛠️ NOVO: Botão de Atualizar / Resetar Busca */}
+          <button
+            type="button"
+            onClick={() => {
+              setFiltroTexto('');       // Limpa o texto digitado
+              carregarUsuarios(1);        // Recarrega a API na página 1
+            }}
+            className="flex items-center justify-center p-2.5 rounded border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition cursor-pointer shadow-2xs shrink-0"
+            title="Resetar busca e atualizar lista"
+          >
+            <RotateCcw size={16} />
+          </button>
+
         </div>
+
+        {/* Botão Novo Perfil Alinhado à Direita */}
         <button
+          type="button"
           onClick={() => abrirModal()}
-          className="flex items-center gap-2 rounded bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700 transition cursor-pointer shadow-sm"
+          className="flex items-center gap-2 rounded bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700 transition cursor-pointer shadow-sm whitespace-nowrap shrink-0 w-full sm:w-auto justify-center"
         >
-          <Plus size={18} /> Novo Usuário
+          <Plus size={18} /> Novo Perfil
         </button>
+
       </div>
 
       {globalError && (
@@ -208,262 +258,217 @@ export default function UsuariosCrud() {
         </div>
       )}
 
-      {/* DataGrid Largo Full-Width */}
-      <div className="w-full overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-md">
-        <table className="w-full border-collapse text-left text-sm text-gray-500 table-fixed">
-          <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-700 border-b">
+
+      {/* Grid de Dados (DataGrid Avançado de Usuários) */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-md w-full">
+        <table className="w-full border-collapse text-left text-sm text-gray-700">
+          {/* 🛠️ CONFIGURAÇÃO REPLICADA: Cabeçalho text-sm, font-bold e border-b-2 */}
+          <thead className="bg-gray-50 text-sm font-bold uppercase text-gray-900 border-b-2 border-gray-300 select-none">
             <tr>
-              <th className="px-6 py-4 w-[30%]">E-mail / Usuário</th>
-              <th className="px-6 py-4 w-[25%]">Perfil Vinculado</th>
-              <th className="px-6 py-4 w-[10%]">Empresa</th>
-              <th className="px-6 py-4 w-[10%]">Fonte de Dado</th>
-              <th className="px-6 py-4 w-[15%]">Status</th>              
-              <th className="px-6 py-4 w-[10%] text-right">Ações</th>
+              <th 
+                onClick={() => handleMudarOrdenacao('email')} 
+                className="px-6 py-4 cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition"
+              >
+                <div className="flex items-center gap-1.5 font-bold tracking-wide">
+                  E-mail <ArrowUpDown size={14} className="text-gray-500 shrink-0" />
+                </div>
+              </th>
+              <th 
+              onClick={() => handleMudarOrdenacao('perfil')}
+              className="px-6 py-4 cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition"
+            >
+              <div className="flex items-center gap-1.5 font-bold tracking-wide">
+                Perfil Associado <ArrowUpDown size={14} className="text-gray-400 shrink-0" />
+              </div>
+            </th>
+            <th className="px-6 py-4 font-bold tracking-wide">Status</th>
+            <th className="px-6 py-4 text-right w-28 font-bold tracking-wide">Ações</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 border-t">
+          {loading ? (
+            <tr>
+              <td colSpan="4" className="px-6 py-12 text-center text-gray-400">Carregando registros...</td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 border-t">
-            {loading ? (
-              <tr>
-                <td colSpan="4" className="px-6 py-12 text-center text-gray-400">Carregando registros da API...</td>
-              </tr>
-            ) : usuarios.length === 0 ? (
-              <tr>
-                <td colSpan="4" className="px-6 py-12 text-center text-gray-400">Nenhum usuário retornado do sistema.</td>
-              </tr>
-            ) : (
-              usuarios.map((usr) => (
-                <tr key={usr.id || usr.Id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-gray-900 truncate" title={usr.email || usr.Email}>
-                    {usr.email || usr.Email}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700 font-medium">
-                    {usr.perfil?.nome || usr.Perfil?.Nome || usr.perfilNome || usr.PerfilNome || '—'}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700 font-medium">
-                    {usr.tenant?.nome || usr.tenant?.Nome || '—'}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700 font-medium">
-                    {usr.tenant?.slug || usr.tenant?.Slug || '—'}
-                  </td>
+          ) : usuariosProcessados.length === 0 ? (
+            <tr>
+              <td colSpan="4" className="px-6 py-12 text-center text-gray-400">Nenhum usuário localizado com os critérios informados.</td>
+            </tr>
+          ) : (
+            usuariosProcessados.map((usuario) => {
+              const pNome = usuario.perfilNome || usuario.PerfilNome || usuario.perfil?.nome || usuario.Perfil?.Nome || '—';
+              const uId = usuario.id || usuario.Id;
+              const uAtivo = usuario.ativo || usuario.Ativo || 'S';
+              return (
+                <tr key={uId} className="hover:bg-gray-50/70 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900">{usuario.email || usuario.Email}</td>
+                  <td className="px-6 py-4 text-gray-600">{pNome}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      (usr.ativo === 'S' || usr.Ativo === 'S') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                    <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold ${
+                      uAtivo === 'S' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
                     }`}>
-                      {(usr.ativo === 'S' || usr.Ativo === 'S') ? 'Ativo' : 'Inativo'}
+                      {uAtivo === 'S' ? 'Ativo' : 'Inativo'}
                     </span>
                   </td>
-                                    <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-4">
-                      <button onClick={() => abrirModal(usr)} className="text-gray-400 hover:text-blue-600 transition cursor-pointer" title="Editar">
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-3">
+                      <button type="button" onClick={() => abrirModal(usuario)} className="text-gray-500 hover:text-blue-600 transition cursor-pointer" title="Editar">
                         <Edit2 size={16} />
                       </button>
-                      <button onClick={() => handleDeletar(usr.id || usr.Id)} className="text-gray-400 hover:text-red-600 transition cursor-pointer" title="Excluir">
+                      <button type="button" onClick={() => handleDeletar(uId)} className="text-gray-500 hover:text-red-600 transition cursor-pointer" title="Excluir">
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              );
+            })
+          )}
+        </tbody>
+      </table>
 
-        {/* Paginação */}
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4 w-full">
-          <span className="text-sm text-gray-700">
-            Página <span className="font-semibold">{paginacao.PageNumber}</span> de <span className="font-semibold">{paginacao.TotalPages}</span> (<span className="font-semibold">{paginacao.TotalItems}</span> itens no total)
-          </span>
-          <div className="flex gap-2">
-            {/* <button
-              onClick={() => carregarUsuarios(paginacao.PageNumber - 1)}
-              disabled={paginacao.PageNumber <= 1 || loading}
-            />
-            <button
-              onClick={() => carregarUsuarios(paginacao.PageNumber + 1)}
-              disabled={paginacao.PageNumber >= paginacao.TotalPages || loading}
-              className="inline-flex h-9 w-9 items-center justify-center rounded border border-gray-300 text-gray-600 transition hover:bg-gray-50 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-            > */}
-                {/* BOTÃO VOLTAR (PREV) */}
-                <button
-                  type="button"
-                  onClick={() => carregarUsuarios(paginacao.PageNumber - 1)}
-                  disabled={paginacao.PageNumber <= 1 || loading}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded border border-gray-300 text-gray-600 transition hover:bg-gray-50 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                  title="Página Anterior"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-
-                {/* BOTÃO AVANÇAR (NEXT) */}
-                <button
-                  type="button"
-                  onClick={() => carregarUsuarios(paginacao.PageNumber + 1)}
-                  disabled={paginacao.PageNumber >= paginacao.TotalPages || loading}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded border border-gray-300 text-gray-600 transition hover:bg-gray-50 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                  title="Próxima Página"
-                >
-              <ChevronRight size={18} />
-            </button>
-          </div>
+      {/* Rodapé Paginador */}
+      <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-3.5 text-xs text-gray-500 select-none">
+        <span>Total de <strong>{paginacao.TotalItems}</strong> registros</span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={paginacao.PageNumber <= 1 || loading}
+            onClick={() => carregarUsuarios(paginacao.PageNumber - 1)}
+            className="p-1.5 rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 transition cursor-pointer"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="font-medium text-gray-700">Página {paginacao.PageNumber} de {paginacao.TotalPages}</span>
+          <button
+            type="button"
+            disabled={paginacao.PageNumber >= paginacao.TotalPages || loading}
+            onClick={() => carregarUsuarios(paginacao.PageNumber + 1)}
+            className="p-1.5 rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 transition cursor-pointer"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
+    </div>
 
-      {/* Modal Suspenso de Cadastro / Edição */}
-      {modalAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border relative space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-lg font-bold text-gray-900">
-                {idSelecionado ? 'Editar Usuário Existente' : 'Cadastrar Novo Usuário'}
-              </h3>
-              <button onClick={() => setModalAberto(false)} className="text-gray-400 hover:text-gray-600 transition cursor-pointer">
-                <X size={20} />
-              </button>
+    {/* Modal Flutuante Embutido */}
+    {modalAberto && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+        <div className="w-full max-w-md rounded-lg bg-white shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+          
+          <div className="flex items-center justify-between bg-gray-50 border-b border-gray-200 p-4">
+            <h2 className="text-base font-bold text-gray-900">
+              {idSelecionado ? 'Editar Credenciais do Usuário' : 'Novo Usuário do Sistema'}
+            </h2>
+            <button 
+              type="button" 
+              onClick={() => setModalAberto(false)} 
+              className="text-gray-400 hover:text-gray-600 p-1 transition rounded hover:bg-gray-200 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSalvar} className="p-4 space-y-4">
+            {/* E-mail */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-gray-700 uppercase">Endereço de E-mail</label>
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full rounded border p-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  fieldErrors.Email ? 'border-red-400 bg-red-50/20' : 'border-gray-300'
+                }`}
+              />
+              {fieldErrors.Email && <span className="text-xs text-red-500 font-medium mt-0.5">• {fieldErrors.Email}</span>}
             </div>
 
-            <form onSubmit={handleSalvar} className="space-y-4">
-              {/* E-mail */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">E-mail / Login</label>
+            {/* Senhas Condicionais */}
+            {!idSelecionado ? (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-gray-700 uppercase">Senha de Acesso</label>
                 <input
-                  type="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="usuario@empresa.com"
-                  className={`w-full rounded border p-2.5 text-sm focus:outline-none ${
-                    fieldErrors.Email ? 'border-red-500 bg-red-50/20' : 'border-gray-300 focus:border-blue-500'
+                  type="password"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  className={`w-full rounded border p-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                    fieldErrors.Senha ? 'border-red-400 bg-red-50/20' : 'border-gray-300'
                   }`}
                 />
-                {fieldErrors.Email && (
-                  <div className="mt-1 flex flex-col gap-0.5">
-                    {fieldErrors.Email.map((erro, index) => (
-                      <p key={index} className="text-xs font-medium text-red-600">• {erro}</p>
-                    ))}
-                  </div>
-                )}
+                {fieldErrors.Senha && <span className="text-xs text-red-500 font-medium mt-0.5">• {fieldErrors.Senha}</span>}
               </div>
-
-              {/* Senha Condicional */}
-              {!idSelecionado ? (
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Senha</label>
-                  <input
-                    type="password"
-                    required
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    placeholder="Defina a senha de acesso"
-                    className={`w-full rounded border p-2.5 text-sm focus:outline-none ${
-                      fieldErrors.Senha ? 'border-red-500 bg-red-50/20' : 'border-gray-300 focus:border-blue-500'
-                    }`}
-                  />
-                  {fieldErrors.Senha && (
-                    <div className="mt-1 flex flex-col gap-0.5">
-                      {fieldErrors.Senha.map((erro, index) => (
-                        <p key={index} className="text-xs font-medium text-red-600">• {erro}</p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                    <Key size={14} className="text-gray-400" /> Nova Senha (Opcional)
-                  </label>
-                  <input
-                    type="password"
-                    value={novaSenha}
-                    onChange={(e) => setNovaSenha(e.target.value)}
-                    placeholder="Deixe em branco para manter a atual"
-                    className={`w-full rounded border p-2.5 text-sm focus:outline-none ${
-                      fieldErrors.NovaSenha ? 'border-red-500 bg-red-50/20' : 'border-gray-300 focus:border-blue-500'
-                    }`}
-                  />
-                  {fieldErrors.NovaSenha && (
-                    <div className="mt-1 flex flex-col gap-0.5">
-                      {fieldErrors.NovaSenha.map((erro, index) => (
-                        <p key={index} className="text-xs font-medium text-red-600">• {erro}</p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ComboBox PerfilId */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Perfil do Usuário</label>
-                <div className="relative">
-                  <select
-                    required
-                    value={perfilId}
-                    onChange={(e) => setPerfilId(e.target.value)}
-                    className={`w-full rounded border bg-white p-2.5 pr-10 text-sm focus:outline-none appearance-none cursor-pointer ${
-                      fieldErrors.PerfilId ? 'border-red-500 bg-red-50/20' : 'border-gray-300 focus:border-blue-500'
-                    }`}
-                  >
-                    <option value="">Selecione um perfil...</option>
-                    {perfisDisponiveis.map((p) => (
-                      <option key={p.id || p.Id} value={p.id || p.Id}>
-                        {p.nome || p.Nome}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                    <svg className="fill-current h-4 w-4" xmlns="http://w3.org" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                    </svg>
-                  </div>
-                </div>
-                {fieldErrors.PerfilId && (
-                  <div className="mt-1 flex flex-col gap-0.5">
-                    {fieldErrors.PerfilId.map((erro, index) => (
-                      <p key={index} className="text-xs font-medium text-red-600">• {erro}</p>
-                    ))}
-                  </div>
-                )}
+            ) : (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-gray-700 uppercase">Nova Senha (Opcional)</label>
+                <input
+                  type="password"
+                  placeholder="Deixe em branco para não alterar"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  className={`w-full rounded border p-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                    fieldErrors.NovaSenha ? 'border-red-400 bg-red-50/20' : 'border-gray-300'
+                  }`}
+                />
+                {fieldErrors.NovaSenha && <span className="text-xs text-red-500 font-medium mt-0.5">• {fieldErrors.NovaSenha}</span>}
               </div>
+            )}
 
-              {/* Status */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Status Cadastral</label>
-                <div className="relative">
-                  <select
-                    value={ativo}
-                    onChange={(e) => setAtivo(e.target.value)}
-                    className="w-full rounded border border-gray-300 bg-white p-2.5 text-sm focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
-                  >
-                    <option value="S">Ativo</option>
-                    <option value="N">Inativo</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                    <svg className="fill-current h-4 w-4" xmlns="http://w3.org" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                    </svg>
-                  </div>
-                </div>
-              </div>
+            {/* Combo Perfil */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-gray-700 uppercase">Perfil Administrativo</label>
+              <select
+                required
+                value={perfilId}
+                onChange={(e) => setPerfilId(e.target.value)}
+                className={`w-full rounded border p-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  fieldErrors.PerfilId ? 'border-red-400 bg-red-50/20' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Vincule um grupo...</option>
+                {perfisDisponiveis.map(p => (
+                  <option key={p.id || p.Id} value={p.id || p.Id}>{p.nome || p.Nome}</option>
+                ))}
+              </select>
+              {fieldErrors.PerfilId && <span className="text-xs text-red-500 font-medium mt-0.5">• {fieldErrors.PerfilId}</span>}
+            </div>
 
-              {/* Botões */}
-              <div className="flex justify-end gap-3 pt-2 border-t mt-4">
-                <button
-                  type="button"
-                  onClick={() => setModalAberto(false)}
-                  className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition cursor-pointer"
-                >
-                  Confirmar e Salvar
-                </button>
-              </div>
-            </form>
-          </div>
+            {/* Status */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-gray-700 uppercase">Status Operacional</label>
+              <select
+                value={ativo}
+                onChange={(e) => setAtivo(e.target.value)}
+                className="w-full rounded border border-gray-300 p-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="S">Ativo</option>
+                <option value="N">Inativo</option>
+              </select>
+            </div>
+
+            {/* Botões Ações */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 mt-2">
+              <button
+                type="button"
+                onClick={() => setModalAberto(false)}
+                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition cursor-pointer shadow-sm"
+              >
+                Salvar Usuário
+              </button>
+            </div>
+          </form>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 }

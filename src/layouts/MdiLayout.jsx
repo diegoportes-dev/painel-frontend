@@ -162,7 +162,7 @@ export default function MdiLayout() {
                   to="/app/niveis-acesso" 
                   className={`flex items-center gap-3 p-2.5 rounded text-sm transition-all ${verificarAtivo('/app/niveis-acesso')}`}
                 >
-                  <ShieldAlert size={16} className="shrink-0 text-indigo-400" />
+                  <ShieldAlert size={16} className="shrink-0" />
                   <span className="whitespace-nowrap">Níveis de Acesso</span>
                 </Link>
 
@@ -180,7 +180,8 @@ export default function MdiLayout() {
         {/* HEADER SUPERIOR */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-20">
           <div className="flex gap-2 select-none">
-            <span className="bg-blue-50 text-blue-600 px-3 py-1 text-xs font-medium rounded border border-blue-200">
+            {/* 🛠️ ALTERAÇÃO: Mantida a cor original (text-blue-600), com letras maiores (text-sm) e negrito (font-bold) */}
+            <span className="bg-blue-50 text-blue-600 px-6 py-1.5 text-sm font-bold tracking-wide rounded border border-blue-200">
               Aba: {obterNomeAba()}
             </span>
           </div>
@@ -203,7 +204,7 @@ export default function MdiLayout() {
         </header>
 
         {/* ÁREA CENTRAL DINÂMICA FLUIDA (OCUPA 100% DA TELA) */}
-        <main className="flex-1 overflow-y-auto p-6 bg-[#f0f3f4]">
+        <main className="flex-1 overflow-y-auto p-6 bg-[#e2e8f0]">
           <div className="w-full"> 
             <Outlet />
           </div>
