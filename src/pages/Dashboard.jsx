@@ -67,7 +67,7 @@ export default function Dashboard() {
       {/* Título e Ação */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-950">Dashboard</h1>
+          {/* <h1 className="text-2xl font-bold text-gray-950">Dashboard</h1> */}
           <p className="text-sm text-gray-600">Visão geral do sistema, tráfego de dados e controle gerencial.</p>
         </div>
         <button

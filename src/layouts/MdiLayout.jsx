@@ -54,6 +54,8 @@ export default function MdiLayout() {
   const obterNomeAba = () => {
     if (location.pathname.includes('perfis')) return 'Perfis de Usuários';
     if (location.pathname.includes('usuarios')) return 'Usuários';
+    if (location.pathname.includes('niveis-acesso')) return 'Níveis de Acesso';
+    if (location.pathname.includes('dashboard')) return 'Dashboard';
     return 'Visão Geral';
   };
 
