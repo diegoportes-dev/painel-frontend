@@ -5,6 +5,7 @@ import {
   ShieldCheck, 
   Users, 
   UserRoundCheck,
+  Headset,
   ChevronDown, 
   Menu, 
   ChevronLeft,
@@ -55,6 +56,7 @@ export default function MdiLayout() {
     if (location.pathname.includes('perfis')) return 'Perfis de Usuários';
     if (location.pathname.includes('usuarios')) return 'Usuários';
     if (location.pathname.includes('niveis-acesso')) return 'Níveis de Acesso';
+    if (location.pathname.includes('atendimento')) return 'Atendimento';
     if (location.pathname.includes('dashboard')) return 'Dashboard';
     return 'Visão Geral';
   };
@@ -112,6 +114,16 @@ export default function MdiLayout() {
               <LayoutDashboard size={18} className="shrink-0" />
               <span className={`transition-opacity duration-200 whitespace-nowrap ${sidebarAberta ? 'opacity-100' : 'hidden'}`}>
                 Dashboard
+              </span>
+            </Link>
+
+            <Link
+              to="/app/atendimento"
+              className={`flex items-center gap-3 p-3 rounded text-sm transition-all ${verificarAtivo('/app/atendimento')}`}
+            >
+              <Headset size={18} className="shrink-0" />
+              <span className={`transition-opacity duration-200 whitespace-nowrap ${sidebarAberta ? 'opacity-100' : 'hidden'}`}>
+                Atendimento
               </span>
             </Link>
 
