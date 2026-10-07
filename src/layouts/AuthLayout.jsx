@@ -9,20 +9,12 @@ export default function AuthLayout() {
         <div className="absolute inset-0 bg-[#2d353c]/45"></div>
 
         {/* Conteúdo do logo da marca */}
-        <div className="relative z-10 flex items-center gap-3 rounded-xl border border-white/50 bg-white/45 p-6 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
+        <div className="relative z-10 flex items-center justify-center rounded-xl border border-white/50 bg-white/45 p-6 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
           <img
-            src="/pharan-logo.png"
-            alt=""
-            className="h-12 w-12 shrink-0 object-contain"
+            src="/pharan-wordmark.png"
+            alt="Pharan"
+            className="h-auto w-72 max-w-full object-contain"
           />
-           <div className="flex flex-col">
-            <span className="text-4xl font-black tracking-tight text-white drop-shadow-sm">
-              Pharan
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#85ce36] ml-0.5">
-              Customer Service
-            </span>
-          </div>
         </div>
       </div>
 
