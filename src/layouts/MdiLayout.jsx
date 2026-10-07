@@ -78,7 +78,7 @@ export default function MdiLayout() {
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-[#85ce36] animate-pulse"></div>
                   <span className="text-sm font-bold tracking-wider uppercase text-gray-200 whitespace-nowrap">
-                    Meu Projeto Painel
+                    Customer Service
                   </span>
                 </div>
                 <button
